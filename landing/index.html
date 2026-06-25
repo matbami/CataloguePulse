@@ -14,10 +14,13 @@
     <main class="page-shell">
       <header class="topbar">
         <a class="brand" href="./index.html" aria-label="CatalogPulse">
-          <span class="brand-mark">CP</span>
+          <span class="brand-mark" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </span>
           <span>CatalogPulse</span>
         </a>
-        <a class="pricing-link" href="#feedback">View Pricing</a>
       </header>
 
       <section class="hero" aria-labelledby="page-title">
@@ -66,7 +69,7 @@
             </p>
           </div>
           <div class="score-badge">
-            <span>Health score</span>
+            <span>Sample opportunity score</span>
             <strong id="healthScore">68</strong>
             <em>/100</em>
           </div>
@@ -78,7 +81,7 @@
           <article>
             <span class="metric-status pass">Basic</span>
             <strong id="basicMetricA">Product data detected</strong>
-            <p>We found public product pages and checked the first sample items.</p>
+            <p>We sampled public product pages to prove the scanner can read store data.</p>
           </article>
           <article>
             <span class="metric-status warn">Basic</span>
@@ -108,20 +111,11 @@
               </ul>
             </div>
 
-            <div class="before-after">
-              <div>
-                <span>Current</span>
-                <p id="currentCopy">Blue dress. Available in different sizes.</p>
-              </div>
-              <div>
-                <span>Optimized</span>
-                <p id="optimizedCopy">Blue satin midi dress for dinners and evening occasions.</p>
-              </div>
-            </div>
+            <div class="before-after-list" id="beforeAfterList"></div>
 
             <p class="bulk-note" id="bulkOpportunity">
-              The full version will scan your full catalog, generate optimized
-              fixes, and let you approve updates before publishing to Shopify.
+              The full app will scan your full catalog, group issues by priority,
+              generate optimized fixes, and let you approve updates before publishing.
             </p>
           </div>
         </section>
@@ -171,7 +165,7 @@
             </label>
 
             <button class="button primary" id="saveResponse" type="button">
-              Unlock my report and join beta
+              Unlock my report and join Beta
             </button>
             <p class="save-status" id="saveStatus" role="status"></p>
           </fieldset>
@@ -191,8 +185,7 @@
       const scannedProducts = document.querySelector("#scannedProducts");
       const healthScore = document.querySelector("#healthScore");
       const opportunityList = document.querySelector("#opportunityList");
-      const currentCopy = document.querySelector("#currentCopy");
-      const optimizedCopy = document.querySelector("#optimizedCopy");
+      const beforeAfterList = document.querySelector("#beforeAfterList");
       const bulkOpportunity = document.querySelector("#bulkOpportunity");
       const feedbackEmail = document.querySelector("#feedbackEmail");
       const payQuestion = document.querySelector("#payQuestion");
@@ -251,7 +244,7 @@
               optimized: "CatalogPulse can review selected product pages when public product data is available."
             },
             bulkOpportunity:
-              "The full app will scan products after installation and let you approve optimized updates in bulk."
+              "The full app will scan every product, group issues by priority, and let you approve optimized updates in bulk."
           });
         } finally {
           button.disabled = false;
@@ -271,7 +264,7 @@
         feedbackEmail.value = "";
         saveStatus.textContent = "";
         saveResponse.disabled = false;
-        saveResponse.textContent = "Unlock my report and join beta";
+        saveResponse.textContent = "Unlock my report and join Beta";
       }
 
       async function playConsole() {
@@ -309,15 +302,14 @@
           opportunityList.appendChild(item);
         });
 
-        currentCopy.textContent = report.beforeAfter.current;
-        optimizedCopy.textContent = report.beforeAfter.optimized;
+        renderBeforeAfterExamples(report.beforeAfterExamples || [report.beforeAfter]);
         bulkOpportunity.textContent = report.bulkOpportunity;
 
         if (report.scannedProducts.length) {
           scannedProducts.hidden = false;
           scannedProducts.innerHTML = "";
           const heading = document.createElement("strong");
-          heading.textContent = "Products sampled";
+          heading.textContent = "Sample products checked";
           scannedProducts.appendChild(heading);
           report.scannedProducts.forEach((product) => {
             const item = document.createElement("span");
@@ -328,6 +320,39 @@
           scannedProducts.hidden = true;
           scannedProducts.innerHTML = "";
         }
+      }
+
+      function renderBeforeAfterExamples(examples) {
+        beforeAfterList.innerHTML = "";
+        examples.slice(0, 2).forEach((example, index) => {
+          const card = document.createElement("article");
+          card.className = "before-after-card";
+
+          const title = document.createElement("h3");
+          title.textContent = example.product || `Sample product ${index + 1}`;
+
+          const grid = document.createElement("div");
+          grid.className = "before-after";
+
+          const current = document.createElement("div");
+          const currentLabel = document.createElement("span");
+          currentLabel.textContent = "Current";
+          const currentText = document.createElement("p");
+          currentText.textContent = example.current || "Short product copy";
+          current.append(currentLabel, currentText);
+
+          const optimized = document.createElement("div");
+          optimized.className = "optimized-copy";
+          const optimizedLabel = document.createElement("span");
+          optimizedLabel.textContent = "Optimized";
+          const optimizedText = document.createElement("p");
+          optimizedText.textContent = example.optimized || "Concise optimized product copy.";
+          optimized.append(optimizedLabel, optimizedText);
+
+          grid.append(current, optimized);
+          card.append(title, grid);
+          beforeAfterList.appendChild(card);
+        });
       }
 
       saveResponse.addEventListener("click", () => {

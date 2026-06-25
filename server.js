@@ -420,12 +420,26 @@ function buildAiPrompt({ storeUrl, products }) {
       "Use short, simple sentences.",
       "Do not use em dashes.",
       "Prefer periods and commas over complex punctuation.",
-      "Avoid jargon unless it is a common ecommerce term like SEO, meta description, or alt text."
+      "Avoid jargon unless it is a common ecommerce term like SEO, meta description, or alt text.",
+      "Optimized product copy must be concise.",
+      "Rule: Replace vague product names with a precise, two-line description.",
+      "Line 1 must state the exact item type, such as apparel, footwear, or accessory, its primary material, and its silhouette or shape.",
+      "Line 2 must detail the color palette, key structural features or hardware, and the specific aesthetic vibe.",
+      "Avoid generic adjectives such as stunning or cool.",
+      "Avoid emojis.",
+      "Avoid em dashes."
     ],
     schema: {
-      healthScore: "number from 1 to 100",
+      healthScore: "number from 1 to 55. This is a sample opportunity score, not a store health guarantee.",
       summary: "one sentence",
       opportunities: ["three short issue strings"],
+      beforeAfterExamples: [
+        {
+          product: "product name",
+          current: "weak current title or description excerpt",
+          optimized: "two-line optimized description"
+        }
+      ],
       beforeAfter: {
         product: "product name",
         current: "weak current title or description excerpt",
@@ -466,7 +480,7 @@ async function generateGeminiReport({ storeUrl, products }) {
       ],
       generationConfig: {
         temperature: 0.4,
-        maxOutputTokens: 520,
+        maxOutputTokens: 720,
         responseMimeType: "application/json"
       }
     }),
@@ -502,7 +516,7 @@ async function generateOpenAiReport({ storeUrl, products }) {
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL || "gpt-4o-mini",
       temperature: 0.4,
-      max_tokens: 520,
+      max_tokens: 720,
       response_format: { type: "json_object" },
       messages: [
         {
@@ -697,7 +711,12 @@ function generateFallbackReport({ storeUrl, products }) {
     0
   );
   const shortDescriptions = products.filter((item) => (item.description || "").length < 180).length;
-  const healthScore = products.length ? Math.max(42, 78 - missingAltCount * 4 - shortDescriptions * 8) : 58;
+  const healthScore = products.length ? Math.min(55, Math.max(38, 64 - missingAltCount * 3 - shortDescriptions * 6)) : 55;
+  const beforeAfterExamples = (products.length ? products : [product]).slice(0, 2).map((item) => ({
+    product: item.title,
+    current: item.description ? compactText(item.description, 140) : item.title,
+    optimized: buildOptimizedSuggestion(item)
+  }));
 
   return normalizeReport({
     storeUrl,
@@ -716,15 +735,10 @@ function generateFallbackReport({ storeUrl, products }) {
         : "Image alt text should be checked across the full catalog for accessibility and SEO context.",
       "SEO meta descriptions can be generated in bulk and reviewed before publishing."
     ],
-    beforeAfter: {
-      product: product.title,
-      current: product.description
-        ? compactText(description, 120)
-        : product.title,
-      optimized: buildOptimizedSuggestion(product)
-    },
+    beforeAfterExamples,
+    beforeAfter: beforeAfterExamples[0],
     bulkOpportunity:
-      "A full Shopify app could scan every product, generate optimized titles/descriptions/meta text, and let you approve updates in bulk before publishing."
+      "The full app will scan every product, group issues by priority, generate fixes, and let you approve bulk updates before publishing."
   });
 }
 
@@ -738,6 +752,8 @@ function normalizeReport(report) {
     opportunities.push("Review product content for clearer buyer details and stronger search snippets.");
   }
 
+  const beforeAfterExamples = normalizeBeforeAfterExamples(report, products);
+
   return {
     storeUrl: report.storeUrl,
     scannedProducts: products.map((product) => ({
@@ -745,20 +761,44 @@ function normalizeReport(report) {
       url: product.url
     })),
     source: report.source || "unknown",
-    healthScore: clampNumber(report.healthScore, 1, 100, 64),
+    healthScore: clampNumber(report.healthScore, 1, 55, 55),
     summary: String(report.summary || "CatalogPulse found visible catalog cleanup opportunities."),
     opportunities,
-    beforeAfter: {
-      product: report.beforeAfter?.product || products[0]?.title || "Sample product",
-      current: report.beforeAfter?.current || products[0]?.title || "Short product copy",
-      optimized:
-        report.beforeAfter?.optimized ||
-        "A clearer product description with material, fit, use case, and buyer benefit details."
-    },
+    beforeAfterExamples,
+    beforeAfter: beforeAfterExamples[0],
     bulkOpportunity:
       report.bulkOpportunity ||
-      "A full Shopify app could scan the entire catalog and preview approved updates in bulk."
+      "The full app will scan the entire catalog, group issues by priority, and preview approved updates in bulk."
   };
+}
+
+function normalizeBeforeAfterExamples(report, products) {
+  const sourceExamples = Array.isArray(report.beforeAfterExamples)
+    ? report.beforeAfterExamples
+    : report.beforeAfter
+      ? [report.beforeAfter]
+      : [];
+
+  const examples = sourceExamples.slice(0, 2).map((example, index) => ({
+    product: String(example.product || products[index]?.title || `Sample product ${index + 1}`),
+    current: String(example.current || products[index]?.description || products[index]?.title || "Short product copy"),
+    optimized: String(example.optimized || buildOptimizedSuggestion(products[index] || example))
+  }));
+
+  while (examples.length < 2) {
+    const product = products[examples.length] || {
+      title: `Sample product ${examples.length + 1}`,
+      productType: "",
+      description: "Short product copy"
+    };
+    examples.push({
+      product: product.title,
+      current: product.description ? compactText(product.description, 140) : product.title,
+      optimized: buildOptimizedSuggestion(product)
+    });
+  }
+
+  return examples;
 }
 
 function stripHtml(html) {
@@ -782,8 +822,11 @@ function compactText(text, maxLength) {
 
 function buildOptimizedSuggestion(product) {
   const title = product.title || "Product";
-  const type = product.productType ? ` ${product.productType}` : "";
-  return `${title}${type}: a clearer product page with fit, material, styling, care, and occasion details so shoppers can decide faster.`;
+  const type = product.productType || "fashion item";
+  return [
+    `${title}: ${type} with clear material, item type, and silhouette details.`,
+    "Color, structure, hardware, and aesthetic are stated plainly for faster buyer decisions."
+  ].join("\n");
 }
 
 function clampNumber(value, min, max, fallback) {
