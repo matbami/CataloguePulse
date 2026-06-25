@@ -55,7 +55,7 @@ select {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  min-height: 112px;
+  min-height: 148px;
 }
 
 .brand {
@@ -65,8 +65,8 @@ select {
 
 .brand-logo {
   display: block;
-  width: 244px;
-  height: 92px;
+  width: 340px;
+  height: 128px;
   object-fit: contain;
   object-position: left center;
 }
@@ -551,8 +551,8 @@ h2 {
   }
 
   .brand-logo {
-    width: 210px;
-    height: 80px;
+    width: 280px;
+    height: 106px;
   }
 
   h1 {
