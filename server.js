@@ -421,7 +421,9 @@ function buildAiPrompt({ storeUrl, products }) {
       "Do not use em dashes.",
       "Prefer periods and commas over complex punctuation.",
       "Avoid jargon unless it is a common ecommerce term like SEO, meta description, or alt text.",
-      "Optimized product copy must be concise, clear, straightforward, and descriptive enough to help a shopper understand the product.",
+      "Optimize product titles only.",
+      "Do not rewrite long product descriptions in this preview.",
+      "Optimized titles must be concise, clear, straightforward, and descriptive enough to help a shopper understand the product.",
       "Avoid generic filler words.",
       "Avoid emojis."
     ],
@@ -432,14 +434,14 @@ function buildAiPrompt({ storeUrl, products }) {
       beforeAfterExamples: [
         {
           product: "product name",
-          current: "weak current title or description excerpt",
-          optimized: "concise optimized product description"
+          current: "current product title",
+          optimized: "optimized product title"
         }
       ],
       beforeAfter: {
         product: "product name",
-        current: "weak current title or description excerpt",
-        optimized: "improved title or description"
+        current: "current product title",
+        optimized: "optimized product title"
       },
       bulkOpportunity: "one sentence about bulk scanning and approved updates"
     }
@@ -710,8 +712,8 @@ function generateFallbackReport({ storeUrl, products }) {
   const healthScore = products.length ? Math.min(55, Math.max(38, 64 - missingAltCount * 3 - shortDescriptions * 6)) : 55;
   const beforeAfterExamples = (products.length ? products : [product]).slice(0, 2).map((item) => ({
     product: item.title,
-    current: item.description ? compactText(item.description, 140) : item.title,
-    optimized: buildOptimizedSuggestion(item)
+    current: item.title,
+    optimized: buildOptimizedTitleSuggestion(item)
   }));
 
   return normalizeReport({
@@ -777,8 +779,8 @@ function normalizeBeforeAfterExamples(report, products) {
 
   const examples = sourceExamples.slice(0, 2).map((example, index) => ({
     product: String(example.product || products[index]?.title || `Sample product ${index + 1}`),
-    current: String(example.current || products[index]?.description || products[index]?.title || "Short product copy"),
-    optimized: String(example.optimized || buildOptimizedSuggestion(products[index] || example))
+    current: String(example.current || products[index]?.title || "Current product title"),
+    optimized: String(example.optimized || buildOptimizedTitleSuggestion(products[index] || example))
   }));
 
   return examples;
@@ -803,10 +805,14 @@ function compactText(text, maxLength) {
   return `${clean.slice(0, maxLength - 3)}...`;
 }
 
-function buildOptimizedSuggestion(product) {
+function buildOptimizedTitleSuggestion(product) {
   const title = product.title || "Product";
   const type = product.productType || "fashion item";
-  return `${title}: A clear ${type} description that explains the product, key details, and why it fits the shopper's need.`;
+  const cleanedTitle = title.replace(/\s+/g, " ").trim();
+  if (type && !cleanedTitle.toLowerCase().includes(type.toLowerCase())) {
+    return `${cleanedTitle} ${type}`.trim();
+  }
+  return cleanedTitle;
 }
 
 function clampNumber(value, min, max, fallback) {

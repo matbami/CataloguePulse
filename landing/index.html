@@ -49,18 +49,6 @@
         </form>
       </section>
 
-      <section class="console-panel" id="consolePanel" hidden aria-live="polite">
-        <div class="console-top">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-        <div class="console-lines" id="consoleLines"></div>
-        <div class="progress-track">
-          <span id="progressBar"></span>
-        </div>
-      </section>
-
       <section class="result-section" id="resultSection" hidden>
         <div class="result-header">
           <div>
@@ -107,20 +95,23 @@
             <div class="report-card">
               <strong>Top opportunities</strong>
               <ul id="opportunityList">
-                <li>Improve short product descriptions.</li>
+                <li>Improve unclear product titles.</li>
                 <li>Add missing SEO meta descriptions.</li>
                 <li>Generate image alt text.</li>
               </ul>
             </div>
 
             <div class="before-after-list" id="beforeAfterList"></div>
-
-            <p class="bulk-note" id="bulkOpportunity">
-              The full app will scan your full catalog, group issues by priority,
-              generate optimized fixes, and let you approve updates before publishing.
-            </p>
           </div>
         </section>
+
+        <aside class="full-app-note" id="fullAppNote" hidden>
+          <strong>What the full app unlocks</strong>
+          <p id="bulkOpportunity">
+            The full app will scan your full catalog, group issues by priority,
+            generate optimized fixes, and let you approve updates before publishing.
+          </p>
+        </aside>
 
         <section class="feedback-panel" id="feedback">
           <div>
@@ -179,9 +170,6 @@
     <script>
       const scanForm = document.querySelector("#scanForm");
       const storeUrl = document.querySelector("#storeUrl");
-      const consolePanel = document.querySelector("#consolePanel");
-      const consoleLines = document.querySelector("#consoleLines");
-      const progressBar = document.querySelector("#progressBar");
       const resultSection = document.querySelector("#resultSection");
       const detectedStore = document.querySelector("#detectedStore");
       const reportSummary = document.querySelector("#reportSummary");
@@ -190,6 +178,7 @@
       const opportunityList = document.querySelector("#opportunityList");
       const beforeAfterList = document.querySelector("#beforeAfterList");
       const bulkOpportunity = document.querySelector("#bulkOpportunity");
+      const fullAppNote = document.querySelector("#fullAppNote");
       const feedbackEmail = document.querySelector("#feedbackEmail");
       const payQuestion = document.querySelector("#payQuestion");
       const featureQuestion = document.querySelector("#featureQuestion");
@@ -199,19 +188,11 @@
       const premiumCards = document.querySelectorAll(".premium-card");
       let currentReport = null;
 
-      const logSteps = [
-        "[INFO] Connecting to Shopify storefront...",
-        "[INFO] Checking public products.json feed...",
-        "[INFO] Sampling top product records...",
-        "[INFO] Reviewing descriptions and SEO fields...",
-        "[INFO] Building sample catalog report..."
-      ];
-
       scanForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         const button = scanForm.querySelector("button");
         button.disabled = true;
-        button.textContent = "Scanning...";
+        button.innerHTML = '<span class="button-loader" aria-hidden="true"></span> Generating report';
         resetResult();
 
         const scanPromise = fetch("/api/scan", {
@@ -227,10 +208,10 @@
         });
 
         try {
-          const [report] = await Promise.all([scanPromise, playConsole()]);
+          const [report] = await Promise.all([scanPromise, wait(2400)]);
           renderReport(report);
         } catch (error) {
-          await playConsole();
+          await wait(700);
           renderReport({
             storeUrl: storeUrl.value,
             source: "browser-fallback",
@@ -243,8 +224,8 @@
               "Bulk approved updates would still be useful for growing catalogs."
             ],
             beforeAfter: {
-              current: "Product copy could not be fetched automatically.",
-              optimized: "CatalogPulse can review selected product pages when public product data is available."
+              current: "Product title could not be fetched automatically.",
+              optimized: "Clear product title preview unavailable."
             },
             bulkOpportunity:
               "The full app will scan every product, group issues by priority, and let you approve optimized updates in bulk."
@@ -256,11 +237,9 @@
       });
 
       function resetResult() {
-        consolePanel.hidden = false;
         resultSection.hidden = true;
-        consoleLines.innerHTML = "";
-        progressBar.style.width = "0%";
         unlockedReport.hidden = true;
+        fullAppNote.hidden = true;
         premiumCards.forEach((card) => card.classList.remove("is-unlocked"));
         featureQuestion.value = "";
         payQuestion.value = "";
@@ -268,21 +247,6 @@
         saveStatus.textContent = "";
         saveResponse.disabled = false;
         saveResponse.textContent = "Unlock my report and join Beta";
-      }
-
-      async function playConsole() {
-        consoleLines.innerHTML = "";
-        progressBar.style.width = "0%";
-
-        for (let index = 0; index < logSteps.length; index += 1) {
-          await wait(560);
-          const line = document.createElement("div");
-          line.textContent = logSteps[index];
-          consoleLines.appendChild(line);
-          progressBar.style.width = `${((index + 1) / logSteps.length) * 100}%`;
-        }
-
-        await wait(420);
       }
 
       function renderReport(report) {
@@ -334,24 +298,24 @@
           card.className = "before-after-card";
 
           const title = document.createElement("h3");
-          title.textContent = example.product || `Sample product ${index + 1}`;
+          title.textContent = index === 0 ? "Title rewrite sample" : "Additional title rewrite";
 
           const grid = document.createElement("div");
           grid.className = "before-after";
 
           const current = document.createElement("div");
           const currentLabel = document.createElement("span");
-          currentLabel.textContent = "Current";
+          currentLabel.textContent = "Current title";
           const currentText = document.createElement("p");
-          currentText.textContent = example.current || "Short product copy";
+          currentText.textContent = example.current || "Current product title";
           current.append(currentLabel, currentText);
 
           const optimized = document.createElement("div");
           optimized.className = "optimized-copy";
           const optimizedLabel = document.createElement("span");
-          optimizedLabel.textContent = "Optimized";
+          optimizedLabel.textContent = "Optimized title";
           const optimizedText = document.createElement("p");
-          optimizedText.textContent = example.optimized || "Concise optimized product copy.";
+          optimizedText.textContent = example.optimized || "Concise optimized product title.";
           optimized.append(optimizedLabel, optimizedText);
 
           grid.append(current, optimized);
@@ -373,6 +337,7 @@
           .then(() => {
             saveStatus.textContent = "Saved. Your report is unlocked.";
             unlockedReport.hidden = false;
+            fullAppNote.hidden = false;
             premiumCards.forEach((card) => card.classList.add("is-unlocked"));
             unlockedReport.scrollIntoView({ behavior: "smooth", block: "nearest" });
           })
