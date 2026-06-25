@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CatalogPulse | Shopify Catalog Health Scanner</title>
+    <meta
+      name="description"
+      content="Run a free Shopify catalog health preview. Find weak product descriptions, SEO gaps, image alt text issues, and bulk cleanup opportunities."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="./index.html" aria-label="CatalogPulse">
+          <span class="brand-mark">CP</span>
+          <span>CatalogPulse</span>
+        </a>
+        <a class="pricing-link" href="#feedback">View Pricing</a>
+      </header>
+
+      <section class="hero" aria-labelledby="page-title">
+        <p class="eyebrow">Free Shopify catalog checkup</p>
+        <h1 id="page-title">Instantly scan your Shopify product pages.</h1>
+        <p class="hero-text">
+          Find weak descriptions, missing SEO details, image alt text gaps, and
+          bulk cleanup opportunities. No credit card. No signup. Try it now.
+        </p>
+
+        <form class="scan-form" id="scanForm">
+          <label for="storeUrl">Enter your Shopify store URL</label>
+          <div class="input-row">
+            <input
+              id="storeUrl"
+              name="storeUrl"
+              type="url"
+              placeholder="https://yourstore.com"
+              autocomplete="url"
+              required
+            />
+            <button type="submit">Run free test</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="console-panel" id="consolePanel" hidden aria-live="polite">
+        <div class="console-top">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="console-lines" id="consoleLines"></div>
+        <div class="progress-track">
+          <span id="progressBar"></span>
+        </div>
+      </section>
+
+      <section class="result-section" id="resultSection" hidden>
+        <div class="result-header">
+          <div>
+            <p class="eyebrow">Sample result ready</p>
+            <h2>Store detected: <span id="detectedStore">your-store.com</span></h2>
+            <p id="reportSummary">
+              CatalogPulse is preparing your sample report.
+            </p>
+          </div>
+          <div class="score-badge">
+            <span>Health score</span>
+            <strong id="healthScore">68</strong>
+            <em>/100</em>
+          </div>
+        </div>
+
+        <div class="sampled-products" id="scannedProducts" hidden></div>
+
+        <div class="metrics-grid">
+          <article>
+            <span class="metric-status pass">Basic</span>
+            <strong id="basicMetricA">Product data detected</strong>
+            <p>We found public product pages and checked the first sample items.</p>
+          </article>
+          <article>
+            <span class="metric-status warn">Basic</span>
+            <strong id="basicMetricB">Optimization gaps found</strong>
+            <p>Some product content can be improved for clarity and search snippets.</p>
+          </article>
+          <article class="premium-card">
+            <span class="metric-status lock">Locked</span>
+            <strong>Bulk fix plan</strong>
+            <p>Preview approved updates across the full catalog before publishing.</p>
+          </article>
+          <article class="premium-card">
+            <span class="metric-status lock">Locked</span>
+            <strong>All-product breakdown</strong>
+            <p>See every product issue grouped by SEO, feeds, inventory, and content.</p>
+          </article>
+        </div>
+
+        <section class="unlocked-report" id="unlockedReport" hidden>
+          <div class="report-content">
+            <div class="report-card">
+              <strong>Top opportunities</strong>
+              <ul id="opportunityList">
+                <li>Improve short product descriptions.</li>
+                <li>Add missing SEO meta descriptions.</li>
+                <li>Generate image alt text.</li>
+              </ul>
+            </div>
+
+            <div class="before-after">
+              <div>
+                <span>Current</span>
+                <p id="currentCopy">Blue dress. Available in different sizes.</p>
+              </div>
+              <div>
+                <span>Optimized</span>
+                <p id="optimizedCopy">Blue satin midi dress for dinners and evening occasions.</p>
+              </div>
+            </div>
+
+            <p class="bulk-note" id="bulkOpportunity">
+              The full version will scan your full catalog, generate optimized
+              fixes, and let you approve updates before publishing to Shopify.
+            </p>
+          </div>
+        </section>
+
+        <section class="feedback-panel" id="feedback">
+          <div>
+            <p class="eyebrow">30-second validation</p>
+            <h2>Would you pay to unlock full catalog cleanup?</h2>
+            <p>
+              We are building the automated Shopify app to scan these issues and
+              safely update approved fixes in bulk.
+            </p>
+          </div>
+
+          <fieldset class="survey-block">
+            <label>
+              What is your primary focus right now?
+              <select id="featureQuestion" required>
+                <option value="">Choose one</option>
+                <option>Fixing SEO and Google rankings</option>
+                <option>Cleaning up Google Shopping or Meta ad feeds</option>
+                <option>Fixing inventory issues like missing SKUs or weights</option>
+                <option>Improving product descriptions in bulk</option>
+                <option>Finding catalog issues every week</option>
+              </select>
+            </label>
+
+            <label>
+              If an app safely fixed these issues for you, would you pay $19/month?
+              <select id="payQuestion" required>
+                <option value="">Choose one</option>
+                <option>Yes, absolutely. This is a headache.</option>
+                <option>Maybe, if it saves enough time.</option>
+                <option>No, I prefer fixing things manually.</option>
+              </select>
+            </label>
+
+            <label>
+              Your email address
+              <input
+                id="feedbackEmail"
+                type="email"
+                placeholder="you@example.com"
+                autocomplete="email"
+                required
+              />
+            </label>
+
+            <button class="button primary" id="saveResponse" type="button">
+              Unlock my report and join beta
+            </button>
+            <p class="save-status" id="saveStatus" role="status"></p>
+          </fieldset>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const scanForm = document.querySelector("#scanForm");
+      const storeUrl = document.querySelector("#storeUrl");
+      const consolePanel = document.querySelector("#consolePanel");
+      const consoleLines = document.querySelector("#consoleLines");
+      const progressBar = document.querySelector("#progressBar");
+      const resultSection = document.querySelector("#resultSection");
+      const detectedStore = document.querySelector("#detectedStore");
+      const reportSummary = document.querySelector("#reportSummary");
+      const scannedProducts = document.querySelector("#scannedProducts");
+      const healthScore = document.querySelector("#healthScore");
+      const opportunityList = document.querySelector("#opportunityList");
+      const currentCopy = document.querySelector("#currentCopy");
+      const optimizedCopy = document.querySelector("#optimizedCopy");
+      const bulkOpportunity = document.querySelector("#bulkOpportunity");
+      const feedbackEmail = document.querySelector("#feedbackEmail");
+      const payQuestion = document.querySelector("#payQuestion");
+      const featureQuestion = document.querySelector("#featureQuestion");
+      const saveResponse = document.querySelector("#saveResponse");
+      const saveStatus = document.querySelector("#saveStatus");
+      const unlockedReport = document.querySelector("#unlockedReport");
+      const premiumCards = document.querySelectorAll(".premium-card");
+      let currentReport = null;
+
+      const logSteps = [
+        "[INFO] Connecting to Shopify storefront...",
+        "[INFO] Checking public products.json feed...",
+        "[INFO] Sampling top product records...",
+        "[INFO] Reviewing descriptions and SEO fields...",
+        "[INFO] Building sample catalog report..."
+      ];
+
+      scanForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const button = scanForm.querySelector("button");
+        button.disabled = true;
+        button.textContent = "Scanning...";
+        resetResult();
+
+        const scanPromise = fetch("/api/scan", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify({ storeUrl: storeUrl.value })
+        }).then(async (response) => {
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || "Scan failed");
+          return data;
+        });
+
+        try {
+          const [report] = await Promise.all([scanPromise, playConsole()]);
+          renderReport(report);
+        } catch (error) {
+          await playConsole();
+          renderReport({
+            storeUrl: storeUrl.value,
+            source: "browser-fallback",
+            healthScore: 58,
+            summary: error.message || "CatalogPulse could not complete this scan.",
+            scannedProducts: [],
+            opportunities: [
+              "We could not read public product data from this URL.",
+              "A full Shopify install would scan richer catalog fields.",
+              "Bulk approved updates would still be useful for growing catalogs."
+            ],
+            beforeAfter: {
+              current: "Product copy could not be fetched automatically.",
+              optimized: "CatalogPulse can review selected product pages when public product data is available."
+            },
+            bulkOpportunity:
+              "The full app will scan products after installation and let you approve optimized updates in bulk."
+          });
+        } finally {
+          button.disabled = false;
+          button.textContent = "Run free test";
+        }
+      });
+
+      function resetResult() {
+        consolePanel.hidden = false;
+        resultSection.hidden = true;
+        consoleLines.innerHTML = "";
+        progressBar.style.width = "0%";
+        unlockedReport.hidden = true;
+        premiumCards.forEach((card) => card.classList.remove("is-unlocked"));
+        saveStatus.textContent = "";
+        saveResponse.disabled = false;
+        saveResponse.textContent = "Unlock my report and join beta";
+      }
+
+      async function playConsole() {
+        consoleLines.innerHTML = "";
+        progressBar.style.width = "0%";
+
+        for (let index = 0; index < logSteps.length; index += 1) {
+          await wait(560);
+          const line = document.createElement("div");
+          line.textContent = logSteps[index];
+          consoleLines.appendChild(line);
+          progressBar.style.width = `${((index + 1) / logSteps.length) * 100}%`;
+        }
+
+        await wait(420);
+      }
+
+      function renderReport(report) {
+        currentReport = report;
+        try {
+          const displayUrl = new URL(storeUrl.value.startsWith("http") ? storeUrl.value : `https://${storeUrl.value}`);
+          detectedStore.textContent = displayUrl.hostname;
+        } catch {
+          detectedStore.textContent = storeUrl.value;
+        }
+        reportSummary.textContent = report.summary;
+        healthScore.textContent = report.healthScore;
+        resultSection.hidden = false;
+        resultSection.scrollIntoView({ behavior: "smooth", block: "start" });
+
+        opportunityList.innerHTML = "";
+        report.opportunities.forEach((opportunity) => {
+          const item = document.createElement("li");
+          item.textContent = opportunity;
+          opportunityList.appendChild(item);
+        });
+
+        currentCopy.textContent = report.beforeAfter.current;
+        optimizedCopy.textContent = report.beforeAfter.optimized;
+        bulkOpportunity.textContent = report.bulkOpportunity;
+
+        if (report.scannedProducts.length) {
+          scannedProducts.hidden = false;
+          scannedProducts.innerHTML = "";
+          const heading = document.createElement("strong");
+          heading.textContent = "Products sampled";
+          scannedProducts.appendChild(heading);
+          report.scannedProducts.forEach((product) => {
+            const item = document.createElement("span");
+            item.textContent = product.title;
+            scannedProducts.appendChild(item);
+          });
+        } else {
+          scannedProducts.hidden = true;
+          scannedProducts.innerHTML = "";
+        }
+      }
+
+      saveResponse.addEventListener("click", () => {
+        if (!featureQuestion.reportValidity() || !payQuestion.reportValidity() || !feedbackEmail.reportValidity()) {
+          return;
+        }
+
+        saveResponse.disabled = true;
+        saveResponse.textContent = "Saving...";
+        saveStatus.textContent = "";
+
+        saveFeedback()
+          .then(() => {
+            saveStatus.textContent = "Saved. Your report is unlocked.";
+            unlockedReport.hidden = false;
+            premiumCards.forEach((card) => card.classList.add("is-unlocked"));
+            unlockedReport.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          })
+          .catch((error) => {
+            saveStatus.textContent = error.message;
+          })
+          .finally(() => {
+            saveResponse.disabled = false;
+            saveResponse.textContent = "Report unlocked";
+          });
+      });
+
+      function saveFeedback() {
+        if (!currentReport) return Promise.resolve();
+
+        return fetch("/api/feedback", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify({
+            storeUrl: storeUrl.value,
+            email: feedbackEmail.value,
+            wouldPay: payQuestion.value,
+            mostImportantFeature: featureQuestion.value,
+            source: currentReport.source,
+            healthScore: currentReport.healthScore,
+            summary: currentReport.summary
+          })
+        }).then(async (response) => {
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || "Could not save response");
+          return data;
+        });
+      }
+
+      function wait(ms) {
+        return new Promise((resolve) => window.setTimeout(resolve, ms));
+      }
+    </script>
+  </body>
+</html>
