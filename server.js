@@ -781,19 +781,6 @@ function normalizeBeforeAfterExamples(report, products) {
     optimized: String(example.optimized || buildOptimizedSuggestion(products[index] || example))
   }));
 
-  while (examples.length < 2) {
-    const product = products[examples.length] || {
-      title: `Sample product ${examples.length + 1}`,
-      productType: "",
-      description: "Short product copy"
-    };
-    examples.push({
-      product: product.title,
-      current: product.description ? compactText(product.description, 140) : product.title,
-      optimized: buildOptimizedSuggestion(product)
-    });
-  }
-
   return examples;
 }
 
