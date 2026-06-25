@@ -10,11 +10,7 @@ Create a Google Sheet with one tab named:
 Submissions
 ```
 
-Add this header row:
-
-```text
-createdAt | ip | storeUrl | email | wouldPay | mostImportantFeature | source | healthScore | summary
-```
+The script below will create the `Submissions` tab and header row automatically if they do not exist.
 
 ## 2. Add Apps Script
 
@@ -27,9 +23,20 @@ In the Google Sheet:
 
 ```javascript
 const SHEET_NAME = "Submissions";
+const HEADERS = [
+  "createdAt",
+  "ip",
+  "storeUrl",
+  "email",
+  "wouldPay",
+  "mostImportantFeature",
+  "source",
+  "healthScore",
+  "summary"
+];
 
 function doPost(e) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  const sheet = getOrCreateSubmissionsSheet();
   const body = JSON.parse(e.postData.contents || "{}");
 
   sheet.appendRow([
@@ -47,6 +54,25 @@ function doPost(e) {
   return ContentService
     .createTextOutput(JSON.stringify({ ok: true }))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getOrCreateSubmissionsSheet() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = spreadsheet.getSheetByName(SHEET_NAME);
+
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(SHEET_NAME);
+  }
+
+  const firstRow = sheet.getRange(1, 1, 1, HEADERS.length).getValues()[0];
+  const hasHeaders = firstRow.some(Boolean);
+
+  if (!hasHeaders) {
+    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+    sheet.setFrozenRows(1);
+  }
+
+  return sheet;
 }
 ```
 
@@ -90,4 +116,3 @@ data/submissions.csv
 ```
 
 So if Google Sheets fails, you still have a backup.
-
