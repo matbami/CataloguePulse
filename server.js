@@ -148,8 +148,8 @@ async function handleFeedback(req, res) {
     summary: String(body.summary || "").trim()
   };
 
-  await saveSubmission(submission);
-  sendJson(res, 200, { ok: true });
+  const sheetsResult = await saveSubmission(submission);
+  sendJson(res, 200, { ok: true, sheets: sheetsResult });
 }
 
 async function handleSubmissionsAdmin(url, res) {
@@ -562,6 +562,37 @@ async function saveSubmission(submission) {
       .map(csvEscape)
       .join(",") + "\n"
   );
+
+  return sendSubmissionToGoogleSheets(submission);
+}
+
+async function sendSubmissionToGoogleSheets(submission) {
+  const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
+
+  if (!webhookUrl) {
+    return { enabled: false };
+  }
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify(submission),
+      signal: AbortSignal.timeout(8000)
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`Google Sheets webhook returned ${response.status}: ${errorBody}`);
+    }
+
+    return { enabled: true, ok: true };
+  } catch (error) {
+    console.error("Google Sheets sync failed:", error.message);
+    return { enabled: true, ok: false, error: error.message };
+  }
 }
 
 function csvEscape(value) {

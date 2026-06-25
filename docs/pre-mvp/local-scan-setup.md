@@ -68,6 +68,7 @@ PORT=3000
 ADMIN_TOKEN=change-this-before-deploying
 SCAN_LIMIT_PER_IP_PER_DAY=5
 SCAN_LIMIT_PER_STORE_PER_DAY=2
+GOOGLE_SHEETS_WEBHOOK_URL=
 ```
 
 Restart the server after editing `.env`.
@@ -101,6 +102,12 @@ http://localhost:3000/admin/submissions?token=your_admin_token
 ```
 
 The admin page also has a CSV download link.
+
+To send submissions into Google Sheets too, follow:
+
+```text
+docs/pre-mvp/google-sheets-setup.md
+```
 
 ## Budget Protection
 
