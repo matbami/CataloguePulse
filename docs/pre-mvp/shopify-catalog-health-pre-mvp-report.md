@@ -807,13 +807,13 @@ Suggested temporary product names:
 - CatalogHealth
 - StoreCatalog Check
 - ProductFixer
-- CatalogWise
+- CatalogueWise
 - ShopCatalog Health
 - ProductDataPilot
 
 Recommended temporary name:
 
-CatalogWise.
+CatalogueWise.
 
 ## 23. Final Recommendation
 

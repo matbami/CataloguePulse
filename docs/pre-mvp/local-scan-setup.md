@@ -1,6 +1,6 @@
 # Local Scan Setup
 
-CatalogWise now has a small Node backend for the pre-MVP scan flow.
+CatalogueWise now has a small Node backend for the pre-MVP scan flow.
 
 ## What It Does
 
