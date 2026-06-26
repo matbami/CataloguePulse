@@ -480,8 +480,9 @@ async function generateGeminiReport({ storeUrl, products }) {
       ],
       generationConfig: {
         temperature: 0.4,
-        maxOutputTokens: 720,
-        responseMimeType: "application/json"
+        maxOutputTokens: 1400,
+        responseMimeType: "application/json",
+        responseSchema: reportResponseSchema()
       }
     }),
     signal: AbortSignal.timeout(12000)
@@ -494,7 +495,7 @@ async function generateGeminiReport({ storeUrl, products }) {
 
   const data = await response.json();
   const content = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-  const parsed = JSON.parse(content);
+  const parsed = parseModelJson(content, "Gemini", data.candidates?.[0]?.finishReason);
 
   return normalizeReport({
     storeUrl,
@@ -516,7 +517,7 @@ async function generateOpenAiReport({ storeUrl, products }) {
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL || "gpt-4o-mini",
       temperature: 0.4,
-      max_tokens: 720,
+      max_tokens: 1400,
       response_format: { type: "json_object" },
       messages: [
         {
@@ -540,7 +541,7 @@ async function generateOpenAiReport({ storeUrl, products }) {
 
   const data = await response.json();
   const content = data.choices?.[0]?.message?.content || "{}";
-  const parsed = JSON.parse(content);
+  const parsed = parseModelJson(content, "OpenAI", data.choices?.[0]?.finish_reason);
 
   return normalizeReport({
     storeUrl,
@@ -548,6 +549,75 @@ async function generateOpenAiReport({ storeUrl, products }) {
     source: "openai",
     ...parsed
   });
+}
+
+function reportResponseSchema() {
+  return {
+    type: "object",
+    properties: {
+      healthScore: { type: "number" },
+      summary: { type: "string" },
+      opportunities: {
+        type: "array",
+        items: { type: "string" }
+      },
+      beforeAfterExamples: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            product: { type: "string" },
+            current: { type: "string" },
+            optimized: { type: "string" }
+          },
+          required: ["product", "current", "optimized"]
+        }
+      },
+      beforeAfter: {
+        type: "object",
+        properties: {
+          product: { type: "string" },
+          current: { type: "string" },
+          optimized: { type: "string" }
+        },
+        required: ["product", "current", "optimized"]
+      },
+      bulkOpportunity: { type: "string" }
+    },
+    required: ["healthScore", "summary", "opportunities", "beforeAfterExamples", "bulkOpportunity"]
+  };
+}
+
+function parseModelJson(content, providerName, finishReason) {
+  const cleanContent = String(content || "")
+    .trim()
+    .replace(/^```(?:json)?/i, "")
+    .replace(/```$/i, "")
+    .trim();
+
+  try {
+    return JSON.parse(cleanContent);
+  } catch (error) {
+    const extracted = extractJsonObject(cleanContent);
+    if (extracted && extracted !== cleanContent) {
+      try {
+        return JSON.parse(extracted);
+      } catch {
+        // The detailed error below is more useful than a second parse failure.
+      }
+    }
+
+    const reason = finishReason ? ` Finish reason: ${finishReason}.` : "";
+    const preview = cleanContent.slice(0, 180).replace(/\s+/g, " ");
+    throw new Error(`${providerName} returned invalid JSON.${reason} Preview: ${preview}`);
+  }
+}
+
+function extractJsonObject(text) {
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+  if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) return "";
+  return text.slice(firstBrace, lastBrace + 1);
 }
 
 async function saveSubmission(submission) {
