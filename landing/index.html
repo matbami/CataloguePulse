@@ -144,17 +144,6 @@
               </select>
             </label>
 
-            <label>
-              Store name or Instagram handle
-              <input
-                id="contactHandle"
-                type="text"
-                placeholder="@yourstore or Store Name"
-                autocomplete="organization"
-                required
-              />
-            </label>
-
             <button class="button primary" id="saveResponse" type="button">
               Unlock my report and join Beta
             </button>
@@ -176,7 +165,6 @@
       const beforeAfterList = document.querySelector("#beforeAfterList");
       const bulkOpportunity = document.querySelector("#bulkOpportunity");
       const fullAppNote = document.querySelector("#fullAppNote");
-      const contactHandle = document.querySelector("#contactHandle");
       const payQuestion = document.querySelector("#payQuestion");
       const featureQuestion = document.querySelector("#featureQuestion");
       const saveResponse = document.querySelector("#saveResponse");
@@ -240,7 +228,6 @@
         premiumCards.forEach((card) => card.classList.remove("is-unlocked"));
         featureQuestion.value = "";
         payQuestion.value = "";
-        contactHandle.value = "";
         saveStatus.textContent = "";
         saveResponse.disabled = false;
         saveResponse.textContent = "Unlock my report and join Beta";
@@ -319,7 +306,7 @@
       }
 
       saveResponse.addEventListener("click", () => {
-        if (!featureQuestion.reportValidity() || !payQuestion.reportValidity() || !contactHandle.reportValidity()) {
+        if (!featureQuestion.reportValidity() || !payQuestion.reportValidity()) {
           return;
         }
 
@@ -354,7 +341,6 @@
           },
           body: JSON.stringify({
             storeUrl: storeUrl.value,
-            contactHandle: contactHandle.value,
             wouldPay: payQuestion.value,
             mostImportantFeature: featureQuestion.value,
             source: currentReport.source,

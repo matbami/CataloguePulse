@@ -126,13 +126,12 @@ async function handleFeedback(req, res) {
     return;
   }
 
-  const contactHandle = String(body.contactHandle || "").trim();
   const wouldPay = String(body.wouldPay || "").trim();
   const mostImportantFeature = String(body.mostImportantFeature || "").trim();
 
-  if (!contactHandle || !wouldPay || !mostImportantFeature) {
+  if (!wouldPay || !mostImportantFeature) {
     sendJson(res, 400, {
-      error: "Store name or handle, payment interest, and preferred feature are required."
+      error: "Payment interest and preferred feature are required."
     });
     return;
   }
@@ -141,7 +140,6 @@ async function handleFeedback(req, res) {
     createdAt: new Date().toISOString(),
     ip: getClientIp(req),
     storeUrl,
-    contactHandle,
     wouldPay,
     mostImportantFeature,
     source: String(body.source || "").trim(),
@@ -199,7 +197,7 @@ async function handleSubmissionsCsv(url, res) {
       "content-type": "text/csv; charset=utf-8",
       "content-disposition": "attachment; filename=\"cataloguewise-submissions.csv\""
     });
-    res.end("createdAt,ip,storeUrl,contactHandle,wouldPay,mostImportantFeature,source,healthScore,summary\n");
+    res.end("createdAt,ip,storeUrl,wouldPay,mostImportantFeature,source,healthScore,summary\n");
   }
 }
 
@@ -556,7 +554,7 @@ async function saveSubmission(submission) {
   if (!existsSync(submissionsPath)) {
     await appendFile(
       submissionsPath,
-      "createdAt,ip,storeUrl,contactHandle,wouldPay,mostImportantFeature,source,healthScore,summary\n"
+      "createdAt,ip,storeUrl,wouldPay,mostImportantFeature,source,healthScore,summary\n"
     );
   }
 
@@ -566,7 +564,6 @@ async function saveSubmission(submission) {
       submission.createdAt,
       submission.ip,
       submission.storeUrl,
-      submission.contactHandle,
       submission.wouldPay,
       submission.mostImportantFeature,
       submission.source,
